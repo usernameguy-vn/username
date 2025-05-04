@@ -1,0 +1,1095 @@
+-- Tải thư viện Orion
+local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/Unknownkellymc1/Orion/main/source')))()
+
+-- Khai báo các dịch vụ
+local Services = {
+    Players = game:GetService("Players"),
+    RunService = game:GetService("RunService"),
+    ReplicatedStorage = game:GetService("ReplicatedStorage"),
+    Workspace = game:GetService("Workspace"),
+    VirtualInputManager = game:GetService("VirtualInputManager"),
+    TeleportService = game:GetService("TeleportService"),
+    HttpService = game:GetService("HttpService"),
+    TweenService = game:GetService("TweenService"),
+    CollectionService = game:GetService("CollectionService"),
+    CoreGui = game:GetService("CoreGui")
+}
+
+-- Khai báo các biến cơ bản
+local player = Services.Players.LocalPlayer
+local mouse = player:GetMouse()
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:FindFirstChild("Humanoid") or character:WaitForChild("Humanoid")
+local humanoidrootpart = character:FindFirstChild("HumanoidRootPart") or character:WaitForChild("HumanoidRootPart")
+
+-- Khai báo các biến Debris_Variables
+local Debris_Variables = {
+    Function_Variables = {
+        getAllFromCollection = { taggedInstances = nil },
+        GetBallInPlayer = { FootBall = nil },
+        triggerQ = { Distance = nil },
+        createBillboard = { BillboardGui = nil },
+        createBarGui = { gui = nil, frame = nil },
+        createBar = { BackgroundFrame = nil, FillFrame = nil },
+        onCharacterAdded = {
+            HumanoidRootPart = nil, styleGui = nil, styleTxt = nil, awakeGui = nil, awakeFrame = nil,
+            flowGui = nil, flowFrame = nil, stamGui = nil, stamFrame = nil, awkBar = nil,
+            flowBar = nil, stmBar = nil, Distance = nil, PlayerStats = nil
+        },
+        createESP = { espData = nil },
+        warpBallToGoal = { ball = nil }
+    },
+    Modules = {},
+    ESP_Features = {
+        espEnabled = false,
+        espFeatures = { Style = false, Awakening = false, Flow = false, Stamina = false },
+        espObjects = {}
+    },
+    WalkSpeedToggle = { WalkSpeedConnect = nil },
+    JumpPowerToggle = { JumpPowerConnect = nil },
+    HitboxToggle = { FootBall = nil, HitBox = nil, Char = nil },
+    HitboxKeybind = { State = false },
+    AutoDribble = { tracked = {}, TargetPlayer = nil, Distance = nil, Sliding = nil, isSliding = false },
+    vipToggle = { hasVIP = false },
+    Raycast = {
+        ball = nil, lastPosition = nil, GRAVITY = Services.Workspace.Gravity, TIME_STEP = 0.1,
+        MAX_TIME = 3, VELOCITY_THRESHOLD = 1, MOVEMENT_THRESHOLD = 1, rayPart = nil, tween = nil
+    },
+    AutoGKKeybind = { State = false, ball = nil, Distance = nil },
+    AutoTeamToggle = { selectedValue = nil, team = nil, position = nil },
+    KaiserKeybide = { State = false },
+    CurveShotProMaxKeybind = { State = false },
+    NoCooldownStealToggle = { newSteal = nil },
+    NoCooldownAirDribbleToggle = {},
+    NoCooldownAirDashToggle = {}
+}
+
+-- Tạo cửa sổ chính
+local Window = OrionLib:MakeWindow({
+    Name = "Noob Hub",
+    HidePremium = false,
+    SaveConfig = true,
+    ConfigFolder = "NoobHubConfig",
+    IntroEnabled = true,
+    IntroText = "Noob Hub",
+    IntroIcon = "",
+    Icon = ""
+})
+
+-- Thông báo khởi động (thay cho KeySystem)
+OrionLib:MakeNotification({
+    Name = "Welcome to Noob Hub!",
+    Content = "Key: NoobHub1234 (This is a demo notification as Orion does not support KeySystem)",
+    Image = "",
+    Time = 5
+})
+
+-- Tạo các tab
+local LegitTab = Window:MakeTab({ Name = "Legit", Icon = "", PremiumOnly = false })
+local VisualTab = Window:MakeTab({ Name = "👁️Visual", Icon = "", PremiumOnly = false })
+local OPTab = Window:MakeTab({ Name = "⚔️OP", Icon = "", PremiumOnly = false })
+local StyleTab = Window:MakeTab({ Name = "✨Style", Icon = "", PremiumOnly = false })
+local TeamTab = Window:MakeTab({ Name = "Team", Icon = "", PremiumOnly = false })
+local TrollTab = Window:MakeTab({ Name = "😈Troll", Icon = "", PremiumOnly = false })
+
+-- Khai báo các hàm phụ trợ
+local Function_Storage = {}
+
+Function_Storage.getAllFromCollection = function(tagName)
+    Debris_Variables.Function_Variables.getAllFromCollection.taggedInstances = Services.CollectionService:GetTagged(tagName)
+    return Debris_Variables.Function_Variables.getAllFromCollection.taggedInstances
+end
+
+Function_Storage.GetBall = function()
+    for _, obj in pairs(Function_Storage.getAllFromCollection("Football")) do
+        if obj.Name == "Football" and obj.Parent ~= Services.ReplicatedStorage.Assets then
+            return obj
+        end
+    end
+end
+
+Function_Storage.UpdateHitboxSize = function(TargetHitbox, Transparency, HitboxSize)
+    TargetHitbox.Material = Enum.Material.ForceField
+    TargetHitbox.BrickColor = BrickColor.new("Neon orange")
+    TargetHitbox.Transparency = Transparency
+    TargetHitbox.Size = Vector3.new(HitboxSize, HitboxSize, HitboxSize)
+end
+
+-- ### Legit Tab UI Elements
+LegitTab:AddSection({ Name = "Player Modifiers" })
+
+local WalkSpeedValue = 16 -- Lưu giá trị WalkSpeed
+local WalkSpeedToggle = LegitTab:AddToggle({
+    Name = "WalkSpeed Toggle",
+    Default = false,
+    Callback = function(Value)
+        task.spawn(function()
+            if Value then
+                Debris_Variables.WalkSpeedToggle.WalkSpeedConnect = humanoid:GetPropertyChangedSignal("WalkSpeed"):Connect(function()
+                    if humanoid.WalkSpeed ~= WalkSpeedValue then
+                        humanoid.WalkSpeed = WalkSpeedValue
+                    end
+                end)
+                task.spawn(function()
+                    while Value do
+                        task.wait(0.1)
+                        if humanoid.WalkSpeed ~= WalkSpeedValue then
+                            humanoid.WalkSpeed = WalkSpeedValue
+                        end
+                    end
+                    if Debris_Variables.WalkSpeedToggle.WalkSpeedConnect then
+                        Debris_Variables.WalkSpeedToggle.WalkSpeedConnect:Disconnect()
+                        Debris_Variables.WalkSpeedToggle.WalkSpeedConnect = nil
+                    end
+                end)
+            else
+                if Debris_Variables.WalkSpeedToggle.WalkSpeedConnect then
+                    Debris_Variables.WalkSpeedToggle.WalkSpeedConnect:Disconnect()
+                    Debris_Variables.WalkSpeedToggle.WalkSpeedConnect = nil
+                end
+            end
+        end)
+    end
+})
+
+local function getValidInput(input)
+    if input and input ~= "" then
+        return input
+    else
+        return "50" -- giá trị mặc định
+    end
+end
+
+LegitTab:AddTextbox({
+    Name = "WalkSpeed Input",
+    Default = "16",
+    TextDisappear = false,
+    Callback = function(Value)
+        WalkSpeedValue = tonumber(Value) or 16
+    end
+})
+
+local JumpPowerValue = 50 -- Lưu giá trị JumpPower
+local JumpPowerToggle = LegitTab:AddToggle({
+    Name = "JumpPower Toggle",
+    Default = false,
+    Callback = function(Value)
+        task.spawn(function()
+            if Value then
+                Debris_Variables.JumpPowerToggle.JumpPowerConnect = humanoid:GetPropertyChangedSignal("JumpPower"):Connect(function()
+                    local inputText = getValidInput(tostring(JumpPowerValue))
+                    local newJumpPower = tonumber(inputText)
+                    if humanoid.JumpPower ~= newJumpPower then
+                        humanoid.JumpPower = newJumpPower
+                    end
+                end)
+                task.spawn(function()
+                    while Value do
+                        task.wait(0.1)
+                        local inputText = getValidInput(tostring(JumpPowerValue))
+                        local newJumpPower = tonumber(inputText)
+                        if humanoid.JumpPower ~= newJumpPower then
+                            humanoid.JumpPower = newJumpPower
+                        end
+                    end
+                    if Debris_Variables.JumpPowerToggle.JumpPowerConnect then
+                        Debris_Variables.JumpPowerToggle.JumpPowerConnect:Disconnect()
+                        Debris_Variables.JumpPowerToggle.JumpPowerConnect = nil
+                    end
+                end)
+            else
+                if Debris_Variables.JumpPowerToggle.JumpPowerConnect then
+                    Debris_Variables.JumpPowerToggle.JumpPowerConnect:Disconnect()
+                    Debris_Variables.JumpPowerToggle.JumpPowerConnect = nil
+                end
+            end
+        end)
+    end
+})
+
+LegitTab:AddTextbox({
+    Name = "JumpPower Input",
+    Default = "50",
+    TextDisappear = false,
+    Callback = function(Value)
+        JumpPowerValue = tonumber(Value) or 50
+    end
+})
+
+LegitTab:AddSection({ Name = "Hitbox" })
+
+local HitboxSizeValue = 10 -- Lưu giá trị Hitbox Size
+local HitboxToggleState = false
+local HitboxToggle = LegitTab:AddToggle({
+    Name = "Hitbox Toggle",
+    Default = false,
+    Callback = function(Value)
+        HitboxToggleState = Value
+        task.spawn(function()
+            while Value do
+                task.wait()
+                Debris_Variables.HitboxToggle.FootBall = Function_Storage.GetBall()
+                if Debris_Variables.HitboxToggle.FootBall then
+                    Debris_Variables.HitboxToggle.HitBox = Debris_Variables.HitboxToggle.FootBall:FindFirstChild("Hitbox")
+                    if Debris_Variables.HitboxToggle.HitBox and Debris_Variables.HitboxToggle.HitBox:IsA("Part") then
+                        Function_Storage.UpdateHitboxSize(Debris_Variables.HitboxToggle.HitBox, 0.5, HitboxSizeValue)
+                    end
+                end
+            end
+            task.wait(0.1)
+            if not Value and Debris_Variables.HitboxToggle.HitBox then
+                Function_Storage.UpdateHitboxSize(Debris_Variables.HitboxToggle.HitBox, 1, 2.5)
+            end
+        end)
+    end
+})
+
+LegitTab:AddButton({
+    Name = "Infinite Yield",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"))()
+    end
+})
+
+LegitTab:AddTextbox({
+    Name = "Hitbox Size",
+    Default = "10",
+    TextDisappear = false,
+    Callback = function(Value)
+        HitboxSizeValue = tonumber(Value) or 10
+    end
+})
+
+LegitTab:AddBind({
+    Name = "Hitbox Keybind",
+    Default = Enum.KeyCode.H,
+    Hold = false,
+    Callback = function()
+        task.spawn(function()
+            Debris_Variables.HitboxKeybind.State = not HitboxToggleState
+            HitboxToggleState = Debris_Variables.HitboxKeybind.State
+            HitboxToggle:Set(Debris_Variables.HitboxKeybind.State)
+        end)
+    end
+})
+
+LegitTab:AddSection({ Name = "Misc" })
+
+-- Khởi tạo cài đặt Auto Dribble
+if not getgenv().AutoDribbleSettings then
+    getgenv().AutoDribbleSettings = {
+        Enabled = false,
+        range = 22
+    }
+end
+
+-- Dịch vụ cơ bản
+local R = game:GetService("ReplicatedStorage")
+local P = game:GetService("Players")
+local U = game:GetService("RunService")
+local L = P.LocalPlayer or P.PlayerAdded:Wait()
+
+-- Toggle Auto Dribble
+LegitTab:AddToggle({
+    Name = "AutoDribble Toggle",
+    Default = false,
+    Callback = function(Value)
+        getgenv().AutoDribbleSettings.Enabled = Value
+        if Value then
+            local function initCharacter()
+                local C = L.Character or L.CharacterAdded:Wait()
+                local H = C:WaitForChild("HumanoidRootPart")
+                local M = C:WaitForChild("Humanoid")
+                return C, H, M
+            end
+            local C, H, M = initCharacter()
+
+            L.CharacterAdded:Connect(function(newChar)
+                C, H, M = initCharacter()
+            end)
+
+            local B = R.Packages.Knit.Services.BallService.RE.Dribble
+            local A = require(R.Assets.Animations)
+
+            local function G(s)
+                if not A.Dribbles[s] then return nil end
+                local I = Instance.new("Animation")
+                I.AnimationId = A.Dribbles[s]
+                return M and M:LoadAnimation(I)
+            end
+
+            local function T(p)
+                if p == L then return false end
+                local c = p.Character
+                if not c then return false end
+                local V = c.Values and c.Values.Sliding
+                if V and V.Value == true then return true end
+                local h = c:FindFirstChildOfClass("Humanoid")
+                if h and h.MoveDirection.Magnitude > 0 and h.WalkSpeed == 0 then return true end
+                return false
+            end
+
+            local function O(p)
+                if not L.Team or not p.Team then return false end
+                return L.Team ~= p.Team
+            end
+
+            local function D(d)
+                if not getgenv().AutoDribbleSettings.Enabled or not C.Values.HasBall.Value then return end
+                B:FireServer()
+                local s = L.PlayerStats.Style.Value
+                local t = G(s)
+                if t then
+                    t:Play()
+                    t:AdjustSpeed(math.clamp(1 + (10 - d) / 10, 1, 2))
+                end
+                local F = workspace:FindFirstChild("Football")
+                if F then
+                    F.AssemblyLinearVelocity = Vector3.new()
+                    F.CFrame = C.HumanoidRootPart.CFrame * CFrame.new(0, -2.5, 0)
+                end
+            end
+
+            task.spawn(function()
+                while getgenv().AutoDribbleSettings.Enabled do
+                    if not C or not H then return end
+                    for _, p in pairs(P:GetPlayers()) do
+                        if O(p) and T(p) then
+                            local r = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
+                            if r then
+                                local d = (r.Position - H.Position).Magnitude
+                                if d < getgenv().AutoDribbleSettings.range then
+                                    D(d)
+                                    break
+                                end
+                            end
+                        end
+                    end
+                    task.wait(0.1)
+                end
+            end)
+        end
+    end
+})
+
+local vipToggle = LegitTab:AddToggle({
+    Name = "VIP Toggle",
+    Default = false,
+    Callback = function(Value)
+        task.spawn(function()
+            Debris_Variables.vipToggle.hasVIP = player:FindFirstChild("HasVIP")
+            if Debris_Variables.vipToggle.hasVIP then
+                Debris_Variables.vipToggle.hasVIP.Value = Value
+                if Value then
+                    OrionLib:MakeNotification({
+                        Name = "VIP Activated",
+                        Content = "You are now a VIP! Enjoy your perks!",
+                        Image = "",
+                        Time = 3
+                    })
+                else
+                    OrionLib:MakeNotification({
+                        Name = "VIP Deactivated",
+                        Content = "VIP status disabled. You lost your perks.",
+                        Image = "",
+                        Time = 3
+                    })
+                end
+            else
+                OrionLib:MakeNotification({
+                    Name = "Error",
+                    Content = "Could not find the 'HasVIP' property. Try Again.",
+                    Image = "",
+                    Time = 3
+                })
+                vipToggle:Set(false)
+            end
+        end)
+    end
+})
+
+if not getgenv().Settings then
+    getgenv().Settings = {}
+end
+
+LegitTab:AddButton({
+    Name = "Infinite Stamina",
+    Callback = function()
+        if not getgenv().Settings.InfiniteStamina then
+            getgenv().Settings.InfiniteStamina = true
+            OrionLib:MakeNotification({
+                Name = "Infinite Stamina",
+                Content = "Enabled",
+                Image = "",
+                Time = 3
+            })
+            task.spawn(function()
+                while task.wait(0.1) do
+                    if getgenv().Settings.InfiniteStamina then
+                        pcall(function()
+                            local plr = game.Players.LocalPlayer
+                            local stats = plr:FindFirstChild("PlayerStats")
+                            if stats then
+                                local stamina = stats:FindFirstChild("Stamina")
+                                if stamina then
+                                    stamina:Destroy()
+                                    local fakeStamina = Instance.new("NumberValue")
+                                    fakeStamina.Name = "Stamina"
+                                    fakeStamina.Value = math.huge
+                                    fakeStamina.Parent = stats
+                                end
+                            end
+                        end)
+                    end
+                end
+            end)
+        else
+            OrionLib:MakeNotification({
+                Name = "Infinite Stamina",
+                Content = "Already Enabled",
+                Image = "",
+                Time = 3
+            })
+        end
+    end
+})
+
+-- ### Visual Tab UI Elements
+VisualTab:AddSection({ Name = "Visual Features" })
+
+local function createESP(player)
+    if player == player or not player.Character then return end
+    local character = player.Character
+    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+    if not humanoidRootPart then return end
+
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name = "ESP_" .. player.Name
+    billboard.Adornee = humanoidRootPart
+    billboard.Size = UDim2.new(0, 100, 0, 50)
+    billboard.StudsOffset = Vector3.new(0, 3, 0)
+    billboard.AlwaysOnTop = true
+    billboard.Parent = game.CoreGui
+
+    local nameLabel = Instance.new("TextLabel")
+    nameLabel.Size = UDim2.new(1, 0, 0, 20)
+    nameLabel.Position = UDim2.new(0, 0, 0, 0)
+    nameLabel.BackgroundTransparency = 1
+    nameLabel.Text = player.Name
+    nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    nameLabel.TextStrokeTransparency = 0
+    nameLabel.Font = Enum.Font.SourceSansBold
+    nameLabel.TextSize = 16
+    nameLabel.Parent = billboard
+
+    Debris_Variables.ESP_Features.espObjects[player] = billboard
+end
+
+local function removeESP(player)
+    if Debris_Variables.ESP_Features.espObjects[player] then
+        Debris_Variables.ESP_Features.espObjects[player]:Destroy()
+        Debris_Variables.ESP_Features.espObjects[player] = nil
+    end
+end
+
+VisualTab:AddToggle({
+    Name = "Enable ESP",
+    Default = false,
+    Callback = function(Value)
+        Debris_Variables.ESP_Features.espEnabled = Value
+        if Value then
+            for _, p in pairs(Services.Players:GetPlayers()) do
+                createESP(p)
+            end
+            Services.Players.PlayerAdded:Connect(function(p)
+                if Debris_Variables.ESP_Features.espEnabled then
+                    p.CharacterAdded:Connect(function()
+                        createESP(p)
+                    end)
+                end
+            end)
+            Services.Players.PlayerRemoving:Connect(function(p)
+                removeESP(p)
+            end)
+            task.spawn(function()
+                while Debris_Variables.ESP_Features.espEnabled do
+                    for p, billboard in pairs(Debris_Variables.ESP_Features.espObjects) do
+                        if p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                            billboard.Adornee = p.Character.HumanoidRootPart
+                        else
+                            removeESP(p)
+                        end
+                    end
+                    task.wait(0.1)
+                end
+            end)
+        else
+            for p, _ in pairs(Debris_Variables.ESP_Features.espObjects) do
+                removeESP(p)
+            end
+        end
+    end
+})
+
+-- ### OP Tab UI Elements
+OPTab:AddSection({ Name = "Striker" })
+
+local function ClosestCharacter(o, w)
+    local c, d = nil, math.huge
+    if not o or not o:FindFirstChild("HumanoidRootPart") then return nil end
+    for _, m in ipairs((w or Services.Workspace):GetDescendants()) do
+        if m:IsA("Model") and m ~= o and m:FindFirstChild("Humanoid") and m:FindFirstChild("HumanoidRootPart") and m:FindFirstChild("Football") then
+            local dist = (o.HumanoidRootPart.Position - m.HumanoidRootPart.Position).Magnitude
+            if dist < d then c, d = m, dist end
+        end
+    end
+    return c
+end
+
+local function Goto(t, g, a)
+    print("Goto called with target:", t, "goal:", g, "action:", a)
+    if humanoidrootpart then
+        humanoidrootpart.CFrame = t
+        print("HumanoidRootPart CFrame set to:", t)
+    else
+        print("Error: humanoidrootpart is nil in Goto function!")
+    end
+    if a == "Slide" then
+        Services.ReplicatedStorage.Packages.Knit.Services.BallService.RE.Slide:FireServer()
+        print("Slide event fired")
+    elseif a == "Kick" then
+        Services.ReplicatedStorage.Packages.Knit.Services.BallService.RE.Shoot:FireServer(100, nil, nil, Services.Workspace.Goals[g].Position)
+        task.wait(0.2)
+        local ball = Services.Workspace:FindFirstChild("Football") or Services.Workspace:WaitForChild("Football", 5)
+        if ball then
+            local targetPos = (Services.Workspace.Goals[g].CFrame * CFrame.new(0, 0, 10)).Position
+            repeat
+                ball.CFrame = CFrame.new(targetPos)
+                task.wait(0.1)
+            until (ball.Position - targetPos).Magnitude < 0.2
+        end
+    end
+end
+
+OPTab:AddToggle({
+    Name = "Auto Goal",
+    Default = false,
+    Callback = function(Value)
+        getgenv().Settings = getgenv().Settings or {}
+        getgenv().Settings.AutoFarmTeleportToggle = Value
+
+        if Value then
+            task.spawn(function()
+                local function autoGoalLogic()
+                    print("autoGoalLogic called (Team:", player.Team.Name, ")")
+                    if player.Team.Name == "Visitor" then
+                        print("Player is on Visitor team, returning.")
+                        return
+                    end
+
+                    local character = player.Character
+                    if not character or not character:FindFirstChild("HumanoidRootPart") then
+                        print("Character or HumanoidRootPart not found.")
+                        return
+                    end
+                    local humanoidrootpart = character:WaitForChild("HumanoidRootPart")
+                    local humanoid = character:FindFirstChildOfClass("Humanoid")
+                    if not humanoid then
+                        print("Humanoid not found.")
+                        return
+                    end
+                    local v = character:FindFirstChild("Values") or character:WaitForChild("Values", 5)
+                    local h = v and (v:FindFirstChild("HasBall") or v:WaitForChild("HasBall", 5))
+                    local g = {["Away"] = "Away", ["Home"] = "Home"}
+
+                    local targetGoal = g[player.Team.Name]
+                    print("Target Goal:", targetGoal)
+
+                    if targetGoal then
+                        if h and h.Value then
+                            print("Player has the ball, kicking.")
+                            Goto(humanoidrootpart.CFrame * CFrame.new(0, 50, 0), targetGoal, "Kick")
+                        else
+                            local b = Services.Workspace:FindFirstChild("Football")
+                            print("Found Football:", b)
+                            if b then
+                                local targetCFrame = b.CFrame * CFrame.new(0, 3.5, 0)
+                                print("Target CFrame for Football:", targetCFrame)
+                                humanoidrootpart.CFrame = targetCFrame
+                                print("HumanoidRootPart CFrame set to:", targetCFrame)
+                            else
+                                print("Football does not exist, trying to find closest player with ball.")
+                                local t = ClosestCharacter(character)
+                                print("Closest character:", t)
+                                local fb = t and t:FindFirstChild("Football") or (t and t:WaitForChild("Football", 5))
+                                print("Football of closest character:", fb)
+                                if fb then Goto(fb.CFrame, targetGoal, "Slide") end
+                            end
+                        end
+                    end
+                end
+
+                local function onTeamChanged()
+                    if getgenv().Settings.AutoFarmTeleportToggle then
+                        autoGoalLogic()
+                    end
+                end
+
+                player:GetPropertyChangedSignal("Team"):Connect(onTeamChanged)
+
+                while getgenv().Settings.AutoFarmTeleportToggle do
+                    autoGoalLogic()
+                    task.wait(0.1)
+                end
+            end)
+        end
+    end
+})
+
+OPTab:AddToggle({
+    Name = "Auto Goal (New)",
+    Default = false,
+    Callback = function(Value)
+        getgenv().Settings = getgenv().Settings or {}
+        getgenv().Settings.AutoGoalTestToggle = Value
+
+        if Value then
+            task.spawn(function()
+                local function autoGoalLogic2()
+                    print("autoGoalLogic2 called (Team:", player.Team.Name, ")")
+                    if player.Team.Name == "Visitor" then
+                        print("Player is on Visitor team, returning.")
+                        return
+                    end
+
+                    local character = player.Character
+                    if not character or not character:FindFirstChild("HumanoidRootPart") then
+                        print("Character or HumanoidRootPart not found.")
+                        return
+                    end
+                    local humanoidrootpart = character:WaitForChild("HumanoidRootPart")
+                    local humanoid = character:FindFirstChildOfClass("Humanoid")
+                    if not humanoid then
+                        print("Humanoid not found.")
+                        return
+                    end
+                    local v = character:FindFirstChild("Values") or character:WaitForChild("Values", 5)
+                    local h = v and (v:FindFirstChild("HasBall") or v:WaitForChild("HasBall", 5))
+                    local g = {["Away"] = "Away", ["Home"] = "Home"}
+
+                    local targetGoal = g[player.Team.Name]
+                    print("Target Goal:", targetGoal)
+
+                    if targetGoal then
+                        if h and h.Value then
+                            print("Player has the ball, kicking.")
+                            Goto(humanoidrootpart.CFrame * CFrame.new(0, 50, 0), targetGoal, "Kick")
+                        else
+                            local b = Services.Workspace:FindFirstChild("Football")
+                            print("Found Football:", b)
+                            if b then
+                                local targetCFrame = b.CFrame * CFrame.new(0, 3.5, 0)
+                                print("Target CFrame for Football:", targetCFrame)
+                                humanoidrootpart.CFrame = targetCFrame
+                                print("HumanoidRootPart CFrame set to:", targetCFrame)
+                                local goalPosition = Services.Workspace.Goals[targetGoal].Position
+                                local ballTargetPos = goalPosition + Vector3.new(0, 3.5, 10)
+                                b.CFrame = CFrame.new(ballTargetPos)
+                                print("Football teleported to:", ballTargetPos)
+                            else
+                                print("Football does not exist, trying to find closest player with ball.")
+                                local t = ClosestCharacter(character)
+                                print("Closest character:", t)
+                                local fb = t and t:FindFirstChild("Football") or (t and t:WaitForChild("Football", 5))
+                                print("Football of closest character:", fb)
+                                if fb then Goto(fb.CFrame, targetGoal, "Slide") end
+                            end
+                        end
+                    end
+                end
+
+                local function onTeamChanged()
+                    if getgenv().Settings.AutoGoalTestToggle then
+                        autoGoalLogic2()
+                    end
+                end
+
+                player:GetPropertyChangedSignal("Team"):Connect(onTeamChanged)
+
+                while getgenv().Settings.AutoGoalTestToggle do
+                    autoGoalLogic2()
+                    task.wait(0.1)
+                end
+            end)
+        end
+    end
+})
+
+OPTab:AddToggle({
+    Name = "Auto Goal (test)",
+    Default = false,
+    Callback = function(Value)
+        getgenv().Settings = getgenv().Settings or {}
+        getgenv().Settings.AutoGoalTestToggle = Value
+
+        if Value then
+            getgenv().AutoGoalConnection = Services.RunService.Heartbeat:Connect(function()
+                local char = player.Character
+                if not char then return end
+
+                local hrp = char:FindFirstChild("HumanoidRootPart")
+                if not hrp then return end
+
+                local ball = Services.Workspace:FindFirstChild("Football")
+                if not (ball and ball:IsA("BasePart")) then return end
+
+                local goalKey = (player.Team.Name == "Home" and "Away") or (player.Team.Name == "Away" and "Home")
+                local goalPart = Services.Workspace:FindFirstChild("Goals") and Services.Workspace.Goals:FindFirstChild(goalKey)
+                if not goalPart then return end
+
+                if not hrp:FindFirstChild("AutoGoalWeld") then
+                    local weld = Instance.new("WeldConstraint")
+                    weld.Name = "AutoGoalWeld"
+                    weld.Part0 = hrp
+                    weld.Part1 = ball
+                    weld.Parent = hrp
+                end
+
+                ball.CFrame = CFrame.new(0, 0, 0)
+                hrp.CFrame = CFrame.new(0, 0, 0)
+
+                Services.ReplicatedStorage.Packages.Knit.Services.BallService.RE.Shoot:FireServer(
+                    100, nil, nil, goalPart.Position
+                )
+
+                hrp.CFrame = CFrame.new(goalPart.Position + Vector3.new(0, 5, 0))
+            end)
+        else
+            if getgenv().AutoGoalConnection then
+                getgenv().AutoGoalConnection:Disconnect()
+                getgenv().AutoGoalConnection = nil
+            end
+
+            local ball = Services.Workspace:FindFirstChild("Football")
+            if ball then
+                local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    local weld = hrp:FindFirstChild("AutoGoalWeld")
+                    if weld then weld:Destroy() end
+                end
+            end
+        end
+    end
+})
+
+OPTab:AddTextbox({
+    Name = "Power",
+    Default = "100",
+    TextDisappear = false,
+    Callback = function(Value)
+        local power = tonumber(Value)
+        if power then
+            getgenv().PowerShootValue = power
+        else
+            warn("Invalid power input, keeping previous value or defaulting to 100")
+            getgenv().PowerShootValue = 100
+        end
+    end
+})
+
+-- ### Troll Tab UI Elements
+TrollTab:AddSection({ Name = "Fling" })
+
+TrollTab:AddButton({
+    Name = "Fling People",
+    Callback = function()
+        loadstring(game:HttpGet("https://pastefy.app/fFP2IgWN/raw"))()
+    end
+})
+
+local FlingAllConnection
+TrollTab:AddToggle({
+    Name = "Fling All (Reo/Kunigami required)",
+    Default = false,
+    Callback = function(Value)
+        local character = Services.Players.LocalPlayer.Character
+        if character and character:FindFirstChild("HumanoidRootPart") then
+            character.HumanoidRootPart.Anchored = Value
+        end
+
+        if Value then
+            FlingAllConnection = task.spawn(function()
+                while true do
+                    for _, p in pairs(Services.Players:GetPlayers()) do
+                        if p ~= Services.Players.LocalPlayer then
+                            local args = {
+                                [1] = "BodyBlock",
+                                [2] = Services.Workspace:FindFirstChild(p.Name)
+                            }
+
+                            if args[2] then
+                                Services.ReplicatedStorage:WaitForChild("Packages")
+                                    :WaitForChild("Knit")
+                                    :WaitForChild("Services")
+                                    :WaitForChild("AbilityService")
+                                    :WaitForChild("RE")
+                                    :WaitForChild("Ability")
+                                    :FireServer(unpack(args))
+                            end
+                        end
+                    end
+                    task.wait(0.25)
+                end
+            end)
+        else
+            if FlingAllConnection then
+                pcall(function()
+                    task.cancel(FlingAllConnection)
+                end)
+            end
+            local char = Services.Players.LocalPlayer.Character
+            if char and char:FindFirstChild("HumanoidRootPart") then
+                char.HumanoidRootPart.Anchored = false
+            end
+        end
+    end
+})
+
+TrollTab:AddSection({ Name = "Movesets" })
+
+TrollTab:AddButton({
+    Name = "Kaiser Dribble (no subj)",
+    Callback = function()
+        local UserInputService = game:GetService("UserInputService")
+
+        local player = Services.Players.LocalPlayer
+        local character = player.Character or player.CharacterAdded:Wait()
+        local camera = Services.Workspace.CurrentCamera
+
+        local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+        gui.Name = "KaiserDribbleUI"
+        gui.ResetOnSpawn = false
+
+        local frame = Instance.new("Frame", gui)
+        frame.Size = UDim2.new(0, 140, 0, 60)
+        frame.Position = UDim2.new(1, -150, 1, -70)
+        frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+        frame.BackgroundTransparency = 0.2
+        frame.Active = true
+        frame.Draggable = true
+
+        local button = Instance.new("TextButton", frame)
+        button.Size = UDim2.new(1, 0, 1, 0)
+        button.Position = UDim2.new(0, 0, 0, 0)
+        button.Text = "Dribble"
+        button.BackgroundColor3 = Color3.fromRGB(60, 120, 255)
+        button.TextColor3 = Color3.new(1, 1, 1)
+        button.TextScaled = true
+        button.AutoButtonColor = true
+
+        button.Visible = UserInputService.TouchEnabled
+
+        local function getClosestVisiblePlayer()
+            local minDistance = math.huge
+            local closest = nil
+            local root = character:FindFirstChild("HumanoidRootPart")
+
+            for _, other in ipairs(Services.Players:GetPlayers()) do
+                if other ~= player and Services.Workspace:FindFirstChild(other.Name) then
+                    local otherChar = Services.Workspace[other.Name]
+                    local otherRoot = otherChar:FindFirstChild("HumanoidRootPart")
+                    if otherRoot then
+                        local dirToPlayer = (otherRoot.Position - root.Position).Unit
+                        local facing = root.CFrame.LookVector
+                        if facing:Dot(dirToPlayer) > 0.5 then
+                            local screenPos, onScreen = camera:WorldToViewportPoint(otherRoot.Position)
+                            if onScreen then
+                                local distance = (otherRoot.Position - root.Position).Magnitude
+                                if distance < minDistance then
+                                    minDistance = distance
+                                    closest = other
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+            return closest
+        end
+
+        local function triggerDribble()
+            local target = getClosestVisiblePlayer()
+            if target then
+                button.Text = "Dribbling..."
+                button.AutoButtonColor = false
+                button.BackgroundTransparency = 0.5
+                button.TextTransparency = 0.5
+
+                task.wait(0.2)
+
+                local args = {
+                    [1] = "KaiserDribble",
+                    [2] = {
+                        ["State"] = "Off-Ball",
+                        ["Action"] = "Dribble",
+                        ["Object"] = Services.Workspace:WaitForChild(target.Name)
+                    }
+                }
+                Services.ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Knit")
+                    :WaitForChild("Services"):WaitForChild("AbilityService")
+                    :WaitForChild("RE"):WaitForChild("Ability"):FireServer(unpack(args))
+
+                button.Text = "Dribble"
+                button.AutoButtonColor = true
+                button.BackgroundTransparency = 0
+                button.TextTransparency = 0
+            end
+        end
+
+        UserInputService.InputBegan:Connect(function(input, processed)
+            if processed then return end
+            if input.KeyCode == Enum.KeyCode.V then
+                triggerDribble()
+            end
+        end)
+
+        button.MouseButton1Click:Connect(triggerDribble)
+    end
+})
+
+-- ### Style Tab UI Elements
+StyleTab:AddSection({ Name = "Style" })
+
+local chosenStyle = "Isagi"
+StyleTab:AddDropdown({
+    Name = "Style",
+    Default = chosenStyle,
+    Options = {"Isagi", "Chigiri", "Bachira", "Otoya", "Hiori", "Gagamaru", "King", "Nagi", "Reo", "Karasu", "Shidou", "Kunigami", "Sae", "Aiku", "Rin", "Yukimiya", "Don Lorenzo", "Kaiser", "NEL Isagi"},
+    Callback = function(Value)
+        chosenStyle = Value
+    end
+})
+
+StyleTab:AddButton({
+    Name = "Use Style",
+    Callback = function()
+        Services.Players.LocalPlayer.PlayerStats.Style.Value = chosenStyle
+    end
+})
+
+local originalAttributes = {}
+local function saveOriginalAttributes()
+    local abilityCooldowns = Services.ReplicatedStorage:FindFirstChild("AbilityCooldowns")
+    if abilityCooldowns then
+        for attrName, attrValue in pairs(abilityCooldowns:GetAttributes()) do
+            originalAttributes[attrName] = attrValue
+        end
+    end
+end
+
+local function restoreOriginalAttributes()
+    local abilityCooldowns = Services.ReplicatedStorage:FindFirstChild("AbilityCooldowns")
+    if abilityCooldowns then
+        for attrName, originalValue in pairs(originalAttributes) do
+            abilityCooldowns:SetAttribute(attrName, originalValue)
+        end
+    end
+end
+
+local function setAttributesToZero()
+    local abilityCooldowns = Services.ReplicatedStorage:FindFirstChild("AbilityCooldowns")
+    if abilityCooldowns then
+        for attrName, _ in pairs(abilityCooldowns:GetAttributes()) do
+            abilityCooldowns:SetAttribute(attrName, 0)
+        end
+    end
+end
+
+local heartbeatConnection = nil
+StyleTab:AddToggle({
+    Name = "No Cooldown",
+    Default = false,
+    Callback = function(Value)
+        if Value then
+            if next(originalAttributes) == nil then
+                saveOriginalAttributes()
+            end
+            if not heartbeatConnection then
+                heartbeatConnection = Services.RunService.Heartbeat:Connect(setAttributesToZero)
+            end
+        else
+            if heartbeatConnection then
+                heartbeatConnection:Disconnect()
+                heartbeatConnection = nil
+            end
+            restoreOriginalAttributes()
+        end
+    end
+})
+
+StyleTab:AddSection({ Name = "Flow" })
+
+local chosenFlow = "Puzzle"
+StyleTab:AddDropdown({
+    Name = "Flow Lock",
+    Default = chosenFlow,
+    Options = {"Ice", "Lightning", "Puzzle", "Monster", "Gale Burst", "Genius", "King's Instinct", "Trap", "Crow", "Demon Wings", "Chameleon", "Wild Card", "Snake", "Prodigy", "Awakened Genius", "Dribbler"},
+    Callback = function(Value)
+        chosenFlow = Value
+    end
+})
+
+StyleTab:AddButton({
+    Name = "Use Flow",
+    Callback = function()
+        Services.Players.LocalPlayer.PlayerStats.Flow.Value = chosenFlow
+    end
+})
+
+-- ### Team Tab UI Elements
+local chosenTeam = nil
+local autoChooseEnabled = false
+
+TeamTab:AddDropdown({
+    Name = "Auto Team",
+    Default = "",
+    Options = {"Home_LW", "Home_RW", "Home_CM", "Home_CF", "Home_GK", "Away_LW", "Away_RW", "Away_CM", "Away_CF", "Away_GK"},
+    Callback = function(Value)
+        chosenTeam = Value
+        if autoChooseEnabled and chosenTeam then
+            local teamSide, position = string.match(chosenTeam, "(%w+)_(%w+)")
+            if teamSide and position then
+                local args = {
+                    [1] = teamSide,
+                    [2] = position
+                }
+                Services.ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Knit")
+                    :WaitForChild("Services"):WaitForChild("Packages"):WaitForChild("TeamService")
+                    :WaitForChild("RE"):WaitForChild("Select"):FireServer(unpack(args))
+            end
+        end
+    end
+})
+
+TeamTab:AddToggle({
+    Name = "Auto Choose",
+    Default = false,
+    Callback = function(Value)
+        autoChooseEnabled = Value
+        if autoChooseEnabled and chosenTeam then
+            local teamSide, position = string.match(chosenTeam, "(%w+)_(%w+)")
+            if teamSide and position then
+                local args = {
+                    [1] = teamSide,
+                    [2] = position
+                }
+                Services.ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Knit")
+                    :WaitForChild("Services"):WaitForChild("Packages"):WaitForChild("TeamService")
+                    :WaitForChild("RE"):WaitForChild("Select"):FireServer(unpack(args))
+            end
+        end
+    end
+})
+
+-- Khởi động OrionLib
+OrionLib:Init()
